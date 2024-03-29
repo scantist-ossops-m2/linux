@@ -75,7 +75,7 @@ asmlinkage long sys_add_key(const char __user *_type,
 	/* pull the payload in if one was supplied */
 	payload = NULL;
 
-	if (plen) {
+	if (_payload) {
 		ret = -ENOMEM;
 		payload = kmalloc(plen, GFP_KERNEL);
 		if (!payload)
@@ -315,7 +315,7 @@ long keyctl_update_key(key_serial_t id,
 
 	/* pull the payload in if one was supplied */
 	payload = NULL;
-	if (plen) {
+	if (_payload) {
 		ret = -ENOMEM;
 		payload = kmalloc(plen, GFP_KERNEL);
 		if (!payload)
