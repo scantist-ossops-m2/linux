@@ -1473,6 +1473,7 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t __user *
 	if ((err = snd_timer_open(&tu->timeri, str, &tselect.id, current->pid)) < 0)
 		goto __err;
 
+	tu->qhead = tu->qtail = tu->qused = 0;
 	kfree(tu->queue);
 	tu->queue = NULL;
 	kfree(tu->tqueue);
