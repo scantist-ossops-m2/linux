@@ -481,7 +481,7 @@ static void rds_tcp_sysctl_reset(struct net *net)
 	list_for_each_entry_safe(tc, _tc, &rds_tcp_conn_list, t_tcp_node) {
 		struct net *c_net = read_pnet(&tc->conn->c_net);
 
-		if (net != c_net || !tc->t_sock)
+		if (net != c_net)
 			continue;
 
 		rds_conn_drop(tc->conn); /* reconnect with new parameters */
