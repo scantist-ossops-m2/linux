@@ -312,6 +312,9 @@ int snd_ctl_add(snd_card_t * card, snd_kcontrol_t * kcontrol)
 	snd_runtime_check(card != NULL && kcontrol != NULL, return -EINVAL);
 	snd_assert(kcontrol->info != NULL, return -EINVAL);
 	id = kcontrol->id;
+	if (id.index > UINT_MAX - kcontrol->count)
+		goto error;
+
 	down_write(&card->controls_rwsem);
 	if (snd_ctl_find_id(card, &id)) {
 		up_write(&card->controls_rwsem);

@@ -559,6 +559,16 @@ static int visor_write_room (struct usb_serial_port *port)
 {
 	dbg("%s - port %d", __FUNCTION__, port->number);
 
+	if (serial->num_bulk_in < 2 || serial->num_interrupt_in < 2) {
+		dev_err(&serial->interface->dev, "missing endpoints\n");
+		return -ENODEV;
+	}
+
+	if (serial->num_bulk_in < 2 || serial->num_interrupt_in < 2) {
+		dev_err(&serial->interface->dev, "missing endpoints\n");
+		return -ENODEV;
+	}
+
 	/*
 	 * We really can take anything the user throws at us
 	 * but let's pick a nice big number to tell the tty
