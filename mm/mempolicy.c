@@ -732,11 +732,6 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
 		*policy |= pol->flags;
 	}
 
-	if (vma) {
-		up_read(&current->mm->mmap_sem);
-		vma = NULL;
-	}
-
 	err = 0;
 	if (nmask)
 		get_policy_nodemask(pol, nmask);
