@@ -1888,6 +1888,9 @@ retry:
 	if (nr_wake < 0 || nr_requeue < 0)
 		return -EINVAL;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * We expect signal_pending(current), but we might be the
 	 * victim of a spurious wakeup as well.
