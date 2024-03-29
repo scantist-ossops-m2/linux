@@ -532,6 +532,11 @@ static int clie_3_5_startup(struct usb_serial *serial)
 		return -ENODEV;
 	}
 
+	if (serial->num_bulk_in < 2 || serial->num_interrupt_in < 2) {
+		dev_err(&serial->interface->dev, "missing endpoints\n");
+		return -ENODEV;
+	}
+
 	/*
 	 * Note that PEG-300 series devices expect the following two calls.
 	 */
