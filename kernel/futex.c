@@ -1911,6 +1911,9 @@ retry_private:
 	if (nr_wake < 0 || nr_requeue < 0)
 		return -EINVAL;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * We took an extra initial reference to the pi_state either
 	 * in futex_proxy_trylock_atomic() or in lookup_pi_state(). We
