@@ -69,6 +69,9 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
 	if (bufsiz > TPM_BUFSIZE)
 		bufsiz = TPM_BUFSIZE;
 
+	if (bufsiz > TPM_BUFSIZE)
+		bufsiz = TPM_BUFSIZE;
+
 	count = be32_to_cpu(*((__be32 *) (buf + 2)));
 
 	if (count == 0)
