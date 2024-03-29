@@ -605,6 +605,9 @@ static void TIChasePort(struct edgeport_port *port, unsigned long timeout, int f
 	if (!tty)
 		return;
 
+	if (!tty)
+		return;
+
 	if (!timeout)
 		timeout = (HZ*EDGE_CLOSING_WAIT)/100;
 
