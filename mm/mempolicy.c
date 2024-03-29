@@ -525,11 +525,6 @@ long do_get_mempolicy(int *policy, nodemask_t *nmask,
 	} else
 		*policy = pol->policy;
 
-	if (vma) {
-		up_read(&current->mm->mmap_sem);
-		vma = NULL;
-	}
-
 	err = 0;
 	if (nmask)
 		get_zonemask(pol, nmask);
