@@ -474,6 +474,9 @@ static int sco_sock_bind(struct socket *sock, struct sockaddr *addr, int addr_le
 	if (!addr || addr->sa_family != AF_BLUETOOTH)
 		return -EINVAL;
 
+	if (addr_len < sizeof(struct sockaddr_sco))
+		return -EINVAL;
+
 	lock_sock(sk);
 
 	if (sk->sk_state != BT_OPEN) {
@@ -711,6 +714,7 @@ static int sco_sock_getsockopt(struct socket *sock, int level, int optname, char
 			break;
 		}
 
+		memset(&cinfo, 0, sizeof(cinfo));
 		cinfo.hci_handle = sco_pi(sk)->conn->hcon->handle;
 		memcpy(cinfo.dev_class, sco_pi(sk)->conn->hcon->dev_class, 3);
 
