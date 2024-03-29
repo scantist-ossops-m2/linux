@@ -90,6 +90,7 @@ static int hidp_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long 
 			fput(csock->file);
 			return err;
 		}
+		ca.name[sizeof(ca.name)-1] = 0;
 
 		if (csock->sk->sk_state != BT_CONNECTED || isock->sk->sk_state != BT_CONNECTED) {
 			fput(csock->file);
