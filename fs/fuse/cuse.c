@@ -604,6 +604,8 @@ static int __init cuse_init(void)
 		class_destroy(cuse_class);
 		return rc;
 	}
+	/* Base reference is now owned by "fud" */
+	fuse_conn_put(&cc->fc);
 
 	return 0;
 }
