@@ -1068,8 +1068,9 @@ static int ccp_run_sha_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
 			init = ccp_sha256_init;
 			break;
 		default:
+			kfree(hmac_buf);
 			ret = -EINVAL;
-			goto e_ctx;
+			goto e_data;
 		}
 		memcpy(ctx.address, init, CCP_SHA_CTXSIZE);
 	} else {
