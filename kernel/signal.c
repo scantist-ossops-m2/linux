@@ -1503,6 +1503,10 @@ send_group_sigqueue(int sig, struct sigqueue *q, struct task_struct *p)
 	if (pid == INT_MIN)
 		return -ESRCH;
 
+	/* -INT_MIN is undefined.  Exclude this case to avoid a UBSAN warning */
+	if (pid == INT_MIN)
+		return -ESRCH;
+
 	read_lock(&tasklist_lock);
 	/* Since it_lock is held, p->sighand cannot be NULL. */
 	spin_lock_irqsave(&p->sighand->siglock, flags);
