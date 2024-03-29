@@ -1936,6 +1936,12 @@ void exit_robust_list(struct task_struct *curr)
 	if (!futex_cmpxchg_enabled)
 		return;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * Fetch the list head (which was registered earlier, via
 	 * sys_set_robust_list()):

@@ -39,7 +39,6 @@
 #include <linux/cn_proc.h>
 #include <linux/mutex.h>
 #include <linux/futex.h>
-#include <linux/compat.h>
 #include <linux/pipe_fs_i.h>
 #include <linux/audit.h> /* for audit_free() */
 #include <linux/resource.h>
@@ -1022,14 +1021,6 @@ NORET_TYPE void do_exit(long code)
 		exit_itimers(tsk->signal);
 	}
 	acct_collect(code, group_dead);
-#ifdef CONFIG_FUTEX
-	if (unlikely(tsk->robust_list))
-		exit_robust_list(tsk);
-#ifdef CONFIG_COMPAT
-	if (unlikely(tsk->compat_robust_list))
-		compat_exit_robust_list(tsk);
-#endif
-#endif
 	if (group_dead)
 		tty_audit_exit();
 	if (unlikely(tsk->audit_context))
@@ -1698,6 +1689,10 @@ asmlinkage long sys_wait4(pid_t upid, int __user *stat_addr,
 	if (options & ~(WNOHANG|WUNTRACED|WCONTINUED|
 			__WNOTHREAD|__WCLONE|__WALL))
 		return -EINVAL;
+
+	/* -INT_MIN is not defined */
+	if (upid == INT_MIN)
+		return -ESRCH;
 
 	if (upid == -1)
 		type = PIDTYPE_MAX;
