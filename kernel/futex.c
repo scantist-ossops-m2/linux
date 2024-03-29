@@ -1841,6 +1841,12 @@ static int futex_fd(u32 __user *uaddr, int signal)
 		goto error;
 	}
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * queue_me() must be called before releasing mmap_sem, because
 	 * key->shared.inode needs to be referenced while holding it.
