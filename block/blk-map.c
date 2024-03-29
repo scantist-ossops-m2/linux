@@ -113,6 +113,9 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
 	struct iov_iter i;
 	int ret;
 
+	if (!iter_is_iovec(iter))
+		goto fail;
+
 	if (map_data)
 		copy = true;
 	else if (iov_iter_alignment(iter) & align)
@@ -135,6 +138,7 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
 
 unmap_rq:
 	__blk_rq_unmap_user(bio);
+fail:
 	rq->bio = NULL;
 	return -EINVAL;
 }
