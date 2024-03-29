@@ -548,11 +548,6 @@ static void visor_read_int_callback (struct urb *urb, struct pt_regs *regs)
 		goto exit;
 	}
 
-	if (serial->num_bulk_in < 2 || serial->num_interrupt_in < 2) {
-		dev_err(&serial->interface->dev, "missing endpoints\n");
-		return -ENODEV;
-	}
-
 	/*
 	 * This information is still unknown what it can be used for.
 	 * If anyone has an idea, please let the author know...
