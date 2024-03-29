@@ -7,7 +7,7 @@
  * Reiner Sailer <sailer@watson.ibm.com>
  * Kylene Hall <kjhall@us.ibm.com>
  *
- * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+ * Maintained by: <tpmdd_devel@lists.sourceforge.net>
  *
  * Device driver for TCG/TCPA TPM (trusted platform module).
  * Specifications at www.trustedcomputinggroup.org	 
@@ -23,10 +23,9 @@
  *
  */
 
+#include <linux/sched.h>
 #include <linux/poll.h>
-#include <linux/mutex.h>
 #include <linux/spinlock.h>
-
 #include "tpm.h"
 
 enum tpm_const {
@@ -330,10 +329,10 @@ static void timeout_work(struct work_struct *work)
 {
 	struct tpm_chip *chip = container_of(work, struct tpm_chip, work);
 
-	mutex_lock(&chip->buffer_mutex);
+	down(&chip->buffer_mutex);
 	atomic_set(&chip->data_pending, 0);
 	memset(chip->data_buffer, 0, TPM_BUFSIZE);
-	mutex_unlock(&chip->buffer_mutex);
+	up(&chip->buffer_mutex);
 }
 
 /*
@@ -382,7 +381,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
 		return -E2BIG;
 	}
 
-	mutex_lock(&chip->tpm_mutex);
+	down(&chip->tpm_mutex);
 
 	if ((rc = chip->vendor.send(chip, (u8 *) buf, count)) < 0) {
 		dev_err(chip->dev,
@@ -421,7 +420,7 @@ out_recv:
 		dev_err(chip->dev,
 			"tpm_transmit: tpm_recv: error %zd\n", rc);
 out:
-	mutex_unlock(&chip->tpm_mutex);
+	up(&chip->tpm_mutex);
 	return rc;
 }
 
@@ -922,7 +921,7 @@ int tpm_open(struct inode *inode, struct file *file)
 
 	spin_unlock(&driver_lock);
 
-	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
+	chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
 	if (chip->data_buffer == NULL) {
 		chip->num_opens--;
 		put_device(chip->dev);
@@ -944,12 +943,12 @@ int tpm_release(struct inode *inode, struct file *file)
 {
 	struct tpm_chip *chip = file->private_data;
 
-	flush_scheduled_work();
 	spin_lock(&driver_lock);
 	file->private_data = NULL;
-	del_singleshot_timer_sync(&chip->user_read_timer);
-	atomic_set(&chip->data_pending, 0);
 	chip->num_opens--;
+	del_singleshot_timer_sync(&chip->user_read_timer);
+	flush_scheduled_work();
+	atomic_set(&chip->data_pending, 0);
 	put_device(chip->dev);
 	kfree(chip->data_buffer);
 	spin_unlock(&driver_lock);
@@ -968,14 +967,14 @@ ssize_t tpm_write(struct file *file, const char __user *buf,
 	while (atomic_read(&chip->data_pending) != 0)
 		msleep(TPM_TIMEOUT);
 
-	mutex_lock(&chip->buffer_mutex);
+	down(&chip->buffer_mutex);
 
 	if (in_size > TPM_BUFSIZE)
 		in_size = TPM_BUFSIZE;
 
 	if (copy_from_user
 	    (chip->data_buffer, (void __user *) buf, in_size)) {
-		mutex_unlock(&chip->buffer_mutex);
+		up(&chip->buffer_mutex);
 		return -EFAULT;
 	}
 
@@ -983,7 +982,7 @@ ssize_t tpm_write(struct file *file, const char __user *buf,
 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
 
 	atomic_set(&chip->data_pending, out_size);
-	mutex_unlock(&chip->buffer_mutex);
+	up(&chip->buffer_mutex);
 
 	/* Set a timeout by which the reader must come claim the result */
 	mod_timer(&chip->user_read_timer, jiffies + (60 * HZ));
@@ -1006,10 +1005,10 @@ ssize_t tpm_read(struct file *file, char __user *buf,
 		if (size < ret_size)
 			ret_size = size;
 
-		mutex_lock(&chip->buffer_mutex);
+		down(&chip->buffer_mutex);
 		if (copy_to_user(buf, chip->data_buffer, ret_size))
 			ret_size = -EFAULT;
-		mutex_unlock(&chip->buffer_mutex);
+		up(&chip->buffer_mutex);
 	}
 
 	return ret_size;
@@ -1031,15 +1030,26 @@ void tpm_remove_hardware(struct device *dev)
 
 	spin_unlock(&driver_lock);
 
+	dev_set_drvdata(dev, NULL);
 	misc_deregister(&chip->vendor.miscdev);
+	kfree(chip->vendor.miscdev.name);
 
 	sysfs_remove_group(&dev->kobj, chip->vendor.attr_group);
 	tpm_bios_log_teardown(chip->bios_dir);
 
-	/* write it this way to be explicit (chip->dev == dev) */
-	put_device(chip->dev);
+	clear_bit(chip->dev_num, dev_mask);
+
+	kfree(chip);
+
+	put_device(dev);
 }
 EXPORT_SYMBOL_GPL(tpm_remove_hardware);
+
+static u8 savestate[] = {
+	0, 193,			/* TPM_TAG_RQU_COMMAND */
+	0, 0, 0, 10,		/* blob length (in bytes) */
+	0, 0, 0, 152		/* TPM_ORD_SaveState */
+};
 
 /*
  * We are about to suspend. Save the TPM state
@@ -1048,12 +1058,6 @@ EXPORT_SYMBOL_GPL(tpm_remove_hardware);
 int tpm_pm_suspend(struct device *dev, pm_message_t pm_state)
 {
 	struct tpm_chip *chip = dev_get_drvdata(dev);
-	u8 savestate[] = {
-		0, 193,		/* TPM_TAG_RQU_COMMAND */
-		0, 0, 0, 10,	/* blob length (in bytes) */
-		0, 0, 0, 152	/* TPM_ORD_SaveState */
-	};
-
 	if (chip == NULL)
 		return -ENODEV;
 
@@ -1078,26 +1082,6 @@ int tpm_pm_resume(struct device *dev)
 EXPORT_SYMBOL_GPL(tpm_pm_resume);
 
 /*
- * Once all references to platform device are down to 0,
- * release all allocated structures.
- * In case vendor provided release function,
- * call it too.
- */
-static void tpm_dev_release(struct device *dev)
-{
-	struct tpm_chip *chip = dev_get_drvdata(dev);
-
-	if (chip->vendor.release)
-		chip->vendor.release(dev);
-
-	chip->release(dev);
-
-	clear_bit(chip->dev_num, dev_mask);
-	kfree(chip->vendor.miscdev.name);
-	kfree(chip);
-}
-
-/*
  * Called from tpm_<specific>.c probe function only for devices 
  * the driver has determined it should claim.  Prior to calling
  * this function the specific probe function has called pci_enable_device
@@ -1114,22 +1098,18 @@ struct tpm_chip *tpm_register_hardware(struct device *dev, const struct tpm_vend
 
 	/* Driver specific per-device data */
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
-
-	if (chip == NULL || devname == NULL) {
-		kfree(chip);
-		kfree(devname);
+	if (chip == NULL)
 		return NULL;
-	}
 
-	mutex_init(&chip->buffer_mutex);
-	mutex_init(&chip->tpm_mutex);
+	init_MUTEX(&chip->buffer_mutex);
+	init_MUTEX(&chip->tpm_mutex);
 	INIT_LIST_HEAD(&chip->list);
 
 	INIT_WORK(&chip->work, timeout_work);
 
-	setup_timer(&chip->user_read_timer, user_reader_timeout,
-			(unsigned long)chip);
+	init_timer(&chip->user_read_timer);
+	chip->user_read_timer.function = user_reader_timeout;
+	chip->user_read_timer.data = (unsigned long) chip;
 
 	memcpy(&chip->vendor, entry, sizeof(struct tpm_vendor_specific));
 
@@ -1146,25 +1126,28 @@ struct tpm_chip *tpm_register_hardware(struct device *dev, const struct tpm_vend
 
 	set_bit(chip->dev_num, dev_mask);
 
+	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
 	scnprintf(devname, DEVNAME_SIZE, "%s%d", "tpm", chip->dev_num);
 	chip->vendor.miscdev.name = devname;
 
 	chip->vendor.miscdev.parent = dev;
 	chip->dev = get_device(dev);
-	chip->release = dev->release;
-	dev->release = tpm_dev_release;
-	dev_set_drvdata(dev, chip);
 
 	if (misc_register(&chip->vendor.miscdev)) {
 		dev_err(chip->dev,
 			"unable to misc_register %s, minor %d\n",
 			chip->vendor.miscdev.name,
 			chip->vendor.miscdev.minor);
-		put_device(chip->dev);
+		put_device(dev);
+		clear_bit(chip->dev_num, dev_mask);
+		kfree(chip);
+		kfree(devname);
 		return NULL;
 	}
 
 	spin_lock(&driver_lock);
+
+	dev_set_drvdata(dev, chip);
 
 	list_add(&chip->list, &tpm_chip_list);
 
@@ -1173,7 +1156,10 @@ struct tpm_chip *tpm_register_hardware(struct device *dev, const struct tpm_vend
 	if (sysfs_create_group(&dev->kobj, chip->vendor.attr_group)) {
 		list_del(&chip->list);
 		misc_deregister(&chip->vendor.miscdev);
-		put_device(chip->dev);
+		put_device(dev);
+		clear_bit(chip->dev_num, dev_mask);
+		kfree(chip);
+		kfree(devname);
 		return NULL;
 	}
 
