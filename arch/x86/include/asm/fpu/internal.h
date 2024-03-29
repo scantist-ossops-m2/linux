@@ -496,7 +496,7 @@ static inline void __cpu_disable_lazy_restore(unsigned int cpu)
 
 static inline int fpu_want_lazy_restore(struct fpu *fpu, unsigned int cpu)
 {
-	return fpu == this_cpu_read_stable(fpu_fpregs_owner_ctx) && cpu == fpu->last_cpu;
+	return fpu == this_cpu_read(fpu_fpregs_owner_ctx) && cpu == fpu->last_cpu;
 }
 
 
