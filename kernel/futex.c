@@ -1949,6 +1949,12 @@ void exit_robust_list(struct task_struct *curr)
 	unsigned long futex_offset;
 	int rc;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * Fetch the list head (which was registered earlier, via
 	 * sys_set_robust_list()):
