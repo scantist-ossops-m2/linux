@@ -1871,6 +1871,7 @@ got_driver:
 		if (IS_ERR(tty)) {
 			tty_unlock();
 			mutex_unlock(&tty_mutex);
+			tty_driver_kref_put(driver);
 			return PTR_ERR(tty);
 		}
 	}
