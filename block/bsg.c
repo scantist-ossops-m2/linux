@@ -670,6 +670,9 @@ bsg_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
 	if (unlikely(segment_eq(get_fs(), KERNEL_DS)))
 		return -EINVAL;
 
+	if (unlikely(segment_eq(get_fs(), KERNEL_DS)))
+		return -EINVAL;
+
 	bsg_set_block(bd, file);
 	bsg_set_write_perm(bd, file);
 
