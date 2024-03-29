@@ -556,6 +556,8 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
 		return -EINVAL;
 	if (args->gsi >= KVM_MAX_IRQ_ROUTES)
 		return -EINVAL;
+	if (args->gsi >= KVM_MAX_IRQ_ROUTES)
+		return -EINVAL;
 
 	eventfd = eventfd_ctx_fdget(args->fd);
 	if (IS_ERR(eventfd))
