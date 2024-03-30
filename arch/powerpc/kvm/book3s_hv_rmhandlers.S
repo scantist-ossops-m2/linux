@@ -2092,6 +2092,20 @@ BEGIN_FTR_SECTION
 	b	kvm_cede_exit	/* just send it up to host on 970 */
 END_FTR_SECTION_IFCLR(CPU_FTR_ARCH_206)
 
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	ld	r9, HSTATE_KVM_VCPU(r13)
+	bl	kvmppc_save_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
+
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	ld	r9, HSTATE_KVM_VCPU(r13)
+	bl	kvmppc_save_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
+
 	/*
 	 * Set our bit in the bitmask of napping threads unless all the
 	 * other threads are already napping, in which case we send this
@@ -2186,6 +2200,18 @@ kvm_end_cede:
 
 	/* Woken by external or decrementer interrupt */
 	ld	r1, HSTATE_HOST_R1(r13)
+
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	bl	kvmppc_restore_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
+
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	bl	kvmppc_restore_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
 
 	/* load up FP state */
 	bl	kvmppc_load_fp
