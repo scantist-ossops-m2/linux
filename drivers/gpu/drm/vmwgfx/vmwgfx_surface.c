@@ -672,6 +672,9 @@ int vmw_surface_define_ioctl(struct drm_device *dev, void *data,
 	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	const struct svga3d_surface_desc *desc;
 
+	if (req->mip_levels > DRM_VMW_MAX_MIP_LEVELS)
+		return -EINVAL;
+
 	if (unlikely(vmw_user_surface_size == 0))
 		vmw_user_surface_size = ttm_round_pot(sizeof(*user_srf)) +
 			128;
