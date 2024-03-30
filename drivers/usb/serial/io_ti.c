@@ -551,6 +551,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
 	wait_queue_t wait;
 	unsigned long flags;
 
+	if (!tty)
+		return;
+
 	if (!timeout)
 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
 
@@ -1743,7 +1746,7 @@ static void edge_bulk_in_callback(struct urb *urb)
 
 	port_number = edge_port->port->number - edge_port->port->serial->minor;
 
-	if (edge_port->lsr_event) {
+	if (urb->actual_length > 0 && edge_port->lsr_event) {
 		edge_port->lsr_event = 0;
 		dbg("%s ===== Port %u LSR Status = %02x, Data = %02x ======",
 		     __func__, port_number, edge_port->lsr_mask, *data);
@@ -2371,8 +2374,11 @@ static void change_port_settings(struct tty_struct *tty,
 	if (!baud) {
 		/* pick a default, any default... */
 		baud = 9600;
-	} else
+	} else {
+		/* Avoid a zero divisor. */
+		baud = min(baud, 461550);
 		tty_encode_baud_rate(tty, baud, baud);
+	}
 
 	edge_port->baud_rate = baud;
 	config->wBaudRate = (__u16)((461550L + baud/2) / baud);

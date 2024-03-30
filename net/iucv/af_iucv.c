@@ -1336,6 +1336,8 @@ static int iucv_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
 	int blen;
 	int err = 0;
 
+	msg->msg_namelen = 0;
+
 	if ((sk->sk_state == IUCV_DISCONN) &&
 	    skb_queue_empty(&iucv->backlog_skb_q) &&
 	    skb_queue_empty(&sk->sk_receive_queue) &&
