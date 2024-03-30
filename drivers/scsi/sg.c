@@ -1697,6 +1697,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
 	if (unlikely(iov_count > MAX_UIOVEC))
 		return -EINVAL;
 
+	if (unlikely(iov_count > MAX_UIOVEC))
+		return -EINVAL;
+
 	if (iov_count) {
 		int len, size = sizeof(struct sg_iovec) * iov_count;
 		struct iovec *iov;
