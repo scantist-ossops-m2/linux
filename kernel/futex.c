@@ -1839,6 +1839,9 @@ retry:
 	if (nr_wake < 0 || nr_requeue < 0)
 		return -EINVAL;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * The check above which compares uaddrs is not sufficient for
 	 * shared futexes. We need to compare the keys:
