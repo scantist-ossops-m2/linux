@@ -184,7 +184,7 @@ static int __rds_rdma_map(struct rds_sock *rs, struct rds_get_mr_args *args,
 	long i;
 	int ret;
 
-	if (rs->rs_bound_addr == 0) {
+	if (rs->rs_bound_addr == 0 || !rs->rs_transport) {
 		ret = -ENOTCONN; /* XXX not a great errno */
 		goto out;
 	}
@@ -856,6 +856,7 @@ int rds_cmsg_atomic(struct rds_sock *rs, struct rds_message *rm,
 err:
 	if (page)
 		put_page(page);
+	rm->atomic.op_active = 0;
 	kfree(rm->atomic.op_notifier);
 
 	return ret;
