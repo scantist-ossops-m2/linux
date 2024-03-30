@@ -1837,6 +1837,9 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
 	u32 uval;
 	int ret;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * Access the page AFTER the hash-bucket is locked.
 	 * Order is important:
