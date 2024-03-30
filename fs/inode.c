@@ -1828,8 +1828,14 @@ void inode_init_owner(struct inode *inode, const struct inode *dir,
 	inode->i_uid = current_fsuid();
 	if (dir && dir->i_mode & S_ISGID) {
 		inode->i_gid = dir->i_gid;
+
+		/* Directories are special, and always inherit S_ISGID */
 		if (S_ISDIR(mode))
 			mode |= S_ISGID;
+		else if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP) &&
+			 !in_group_p(inode->i_gid) &&
+			 !capable_wrt_inode_uidgid(dir, CAP_FSETID))
+			mode &= ~S_ISGID;
 	} else
 		inode->i_gid = current_fsgid();
 	inode->i_mode = mode;
@@ -1840,14 +1846,18 @@ EXPORT_SYMBOL(inode_init_owner);
  * inode_owner_or_capable - check current task permissions to inode
  * @inode: inode being checked
  *
- * Return true if current either has CAP_FOWNER to the inode, or
- * owns the file.
+ * Return true if current either has CAP_FOWNER in a namespace with the
+ * inode owner uid mapped, or owns the file.
  */
 bool inode_owner_or_capable(const struct inode *inode)
 {
+	struct user_namespace *ns;
+
 	if (uid_eq(current_fsuid(), inode->i_uid))
 		return true;
-	if (inode_capable(inode, CAP_FOWNER))
+
+	ns = current_user_ns();
+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
 		return true;
 	return false;
 }
