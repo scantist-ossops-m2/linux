@@ -1893,6 +1893,9 @@ static int fixup_pi_state_owner(u32 __user *uaddr, struct futex_q *q,
 	if (nr_wake < 0 || nr_requeue < 0)
 		return -EINVAL;
 
+	if (nr_wake < 0 || nr_requeue < 0)
+		return -EINVAL;
+
 	/*
 	 * We are here either because we stole the rtmutex from the
 	 * previous highest priority waiter or we are the highest priority
