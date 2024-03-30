@@ -1593,6 +1593,13 @@ END_FTR_SECTION_IFCLR(CPU_FTR_ARCH_206)
 	/* save FP state */
 	bl	.kvmppc_save_fp
 
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	ld	r9, HSTATE_KVM_VCPU(r13)
+	bl	kvmppc_save_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
+
 	/*
 	 * Take a nap until a decrementer or external interrupt occurs,
 	 * with PECE1 (wake on decr) and PECE0 (wake on external) set in LPCR
@@ -1618,6 +1625,12 @@ kvm_end_cede:
 
 	/* Woken by external or decrementer interrupt */
 	ld	r1, HSTATE_HOST_R1(r13)
+
+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+BEGIN_FTR_SECTION
+	bl	kvmppc_restore_tm
+END_FTR_SECTION_IFSET(CPU_FTR_TM)
+#endif
 
 	/* load up FP state */
 	bl	kvmppc_load_fp
