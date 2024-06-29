@@ -66,6 +66,9 @@ enum {
 /* Size and alignment of buffer table entries (same) */
 #define EFX_BUF_SIZE	EFX_PAGE_SIZE
 
+/* Alignment of PCIe DMA boundaries (4KB) */
+#define EFX_PAGE_SIZE	4096
+
 /**
  * struct falcon_board_type - board operations and type information
  * @id: Board type id, as found in NVRAM
